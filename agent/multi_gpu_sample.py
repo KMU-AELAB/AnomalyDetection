@@ -32,7 +32,7 @@ class Sample(object):
         self.torchvision_transform = transforms.Compose([
             transforms.Resize((1024, 512)),
             transforms.RandomRotation((-1.2, 1.2), fill='white'),
-            transforms.ColorJitter(brightness=(1., 2.)),
+            transforms.ColorJitter(brightness=(0.5, 1.2)),
             transforms.ToTensor(),
         ])
 
@@ -145,7 +145,6 @@ class Sample(object):
         tqdm_batch = tqdm(self.dataloader, total=self.total_iter, desc="epoch-{}".format(self.epoch))
 
         avg_loss = AverageMeter()
-        out, X = None, None
         for curr_it, X in enumerate(tqdm_batch):
             self.model.train()
 

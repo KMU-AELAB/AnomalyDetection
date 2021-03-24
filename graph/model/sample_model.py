@@ -22,10 +22,10 @@ def reduce2d(_in, _out):
 def deconv2d(_in, _out):
     return nn.Sequential(
         nn.ConvTranspose2d(in_channels=_in, out_channels=_out * 2, kernel_size=4, stride=2,
-                           padding=1, bias=False),
+                           padding=1, bias=True),
         nn.ReLU(inplace=True),
         nn.ConvTranspose2d(in_channels=_out * 2, out_channels=_out, kernel_size=4, stride=2,
-                           padding=1, bias=False),
+                           padding=1, bias=True),
         nn.Conv2d(_out, _out, kernel_size=3, stride=1, padding=1),
         nn.ReLU(inplace=True),
     )
