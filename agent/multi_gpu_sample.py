@@ -123,6 +123,16 @@ class Sample(object):
         except KeyboardInterrupt:
             print("You have entered CTRL+C.. Wait to finalize")
 
+    def record_image(self, output, origin):
+        self.summary_writer.add_image('/origin 1', origin[0], self.epoch)
+        self.summary_writer.add_image('/origin 2', origin[1], self.epoch)
+        self.summary_writer.add_image('/origin 1', origin[2], self.epoch)
+
+        self.summary_writer.add_image('/model_output 2', output[0], self.epoch)
+        self.summary_writer.add_image('/model_output 1', output[1], self.epoch)
+        self.summary_writer.add_image('/model_output 2', output[2], self.epoch)
+
+
     def train(self):
         for _ in range(self.config.epoch):
             self.epoch += 1
@@ -135,6 +145,7 @@ class Sample(object):
         tqdm_batch = tqdm(self.dataloader, total=self.total_iter, desc="epoch-{}".format(self.epoch))
 
         avg_loss = AverageMeter()
+        out, X = None, None
         for curr_it, X in enumerate(tqdm_batch):
             self.model.train()
 
@@ -150,5 +161,8 @@ class Sample(object):
             avg_loss.update(loss)
 
         tqdm_batch.close()
+
+        self.record_image(out, X)
+        self.summary_writer.add_scalar('train/loss', avg_loss.val, self.epoch)
 
         self.scheduler.step(avg_loss.val)
