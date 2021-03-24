@@ -142,7 +142,7 @@ class Sample(object):
 
             out = self.model(X)
 
-            loss = self.loss_disc(out, X)
+            loss = self.loss(out, X)
 
             self.opt.zero_grad()
             loss.backward()

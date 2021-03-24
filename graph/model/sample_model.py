@@ -15,7 +15,7 @@ def conv2d(_in):
 
 def reduce2d(_in, _out):
     return nn.Sequential(
-        nn.Conv2d(_in, _out, kernel_size=3, stride=1),
+        nn.Conv2d(_in, _out, kernel_size=3, stride=2, padding=1),
         nn.ReLU(inplace=True),
     )
 
@@ -80,7 +80,7 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
 
         self.deconv_lst = nn.ModuleList([
-            deconv2d(1536, 512),
+            deconv2d(1024, 512),
             deconv2d(512, 128),
             deconv2d(128, 3),
         ])
