@@ -7,10 +7,11 @@ import torch
 from torch import nn
 from torch.backends import cudnn
 from torch.utils.data import DataLoader
+from torchvision import transforms
 
 from tensorboardX import SummaryWriter
 
-from graph.model.sample_model import SampleModel as Model
+from graph.model.sample_model import Model
 from graph.loss.sample_loss import SampleLoss as Loss
 from data.sample_dataset import SampleDataset
 
@@ -27,31 +28,37 @@ class Sample(object):
         self.flag_gan = False
         self.train_count = 0
 
+        self.torchvision_transform = transforms.Compose([
+            transforms.Resize((1024, 512)),
+            transforms.RandomRotation((-1.2, 1.2), fill='white'),
+            transforms.ColorJitter(brightness=(-40, 40)),
+            transforms.ToTensor(),
+        ])
+
         self.pretraining_step_size = self.config.pretraining_step_size
         self.batch_size = self.config.batch_size
 
         self.logger = set_logger('train_epoch.log')
 
         # define dataloader
-        self.dataset = SampleDataset(self.config)
+        self.dataset = SampleDataset(self.config, self.torchvision_transform)
         self.dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=1,
                                      pin_memory=self.config.pin_memory, collate_fn=self.collate_function)
 
         # define models ( generator and discriminator)
-        self.generator = Model().cuda()
+        self.model = Model().cuda()
 
         # define loss
-        self.loss_generator = Loss().cuda()
+        self.loss = Loss().cuda()
 
         # define lr
-        self.lr_generator = self.config.learning_rate
+        self.lr = self.config.learning_rate
 
         # define optimizer
-        self.opt_generator = torch.optim.Adam(self.generator.parameters(), lr=self.lr_generator)
+        self.opt = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
         # define optimize scheduler
-        self.scheduler_generator = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_generator, mode='min',
-                                                                              factor=0.8, cooldown=6)
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt, mode='min', factor=0.8, cooldown=10)
 
         # initialize train counter
         self.epoch = 0
@@ -66,7 +73,7 @@ class Sample(object):
 
         # parallel setting
         gpu_list = list(range(self.config.gpu_cnt))
-        self.generator = nn.DataParallel(self.generator, device_ids=gpu_list)
+        self.model = nn.DataParallel(self.model, device_ids=gpu_list)
 
         # Model Loading from the latest checkpoint if not found start from scratch.
         self.load_checkpoint(self.config.checkpoint_file)
@@ -78,7 +85,7 @@ class Sample(object):
 
     def print_train_info(self):
         print("seed: ", self.manual_seed)
-        print('Number of model parameters: {}'.format(count_model_prameters(self.generator)))
+        print('Number of model parameters: {}'.format(count_model_prameters(self.model)))
 
     def collate_function(self, samples):
         return samples
@@ -89,8 +96,7 @@ class Sample(object):
             print("Loading checkpoint '{}'".format(filename))
             checkpoint = torch.load(filename)
 
-            self.generator.load_state_dict(checkpoint['generator_state_dict'])
-            self.opt_generator.load_state_dict(checkpoint['generator_optimizer'])
+            self.model.load_state_dict(checkpoint['model_state_dict'])
 
         except OSError as e:
             print("No checkpoint exists from '{}'. Skipping...".format(self.config.checkpoint_dir))
@@ -101,8 +107,7 @@ class Sample(object):
                                 'checkpoint_{}.pth.tar'.format(epoch))
 
         state = {
-            'generator_state_dict': self.generator.state_dict(),
-            'generator_optimizer': self.opt_generator.state_dict(),
+            'model_state_dict': self.model.state_dict(),
         }
 
         torch.save(state, tmp_name)
@@ -127,27 +132,21 @@ class Sample(object):
     def train_by_epoch(self):
         tqdm_batch = tqdm(self.dataloader, total=self.total_iter, desc="epoch-{}".format(self.epoch))
 
-        avg_generator_loss = AverageMeter()
-        for curr_it, (X, y) in enumerate(tqdm_batch):
-            self.accumulate_iter += 1
-
-            self.generator.train()
-            free(self.generator)
+        avg_loss = AverageMeter()
+        for curr_it, X in enumerate(tqdm_batch):
+            self.model.train()
 
             X = X.cuda(async=self.config.async_loading)
 
-            logits = self.generator(X)
+            out = self.model(X)
 
-            loss = self.loss_disc(logits, y)
+            loss = self.loss_disc(out, X)
+
+            self.opt.zero_grad()
             loss.backward()
-            self.opt_generator.step()
-            avg_generator_loss.update(loss)
+            self.opt.step()
+            avg_loss.update(loss)
 
         tqdm_batch.close()
 
-        self.scheduler_generator.step(avg_generator_loss.val)
-
-        with torch.no_grad():
-            self.generator.eval()
-
-            # add evaluation code
+        self.scheduler.step(avg_loss.val)

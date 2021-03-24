@@ -5,50 +5,123 @@ import torch.nn.functional as F
 from graph.weights_initializer import weights_init
 
 
-class SampleModule(nn.Module):
-    def __init__(self):
-        super(SampleModule, self).__init__()
+def conv2d(_in):
+    return nn.Sequential(
+        nn.Conv2d(_in, _in, kernel_size=3, stride=1, padding=1),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(_in, _in, kernel_size=3, stride=1, padding=1),
+        nn.ReLU(inplace=True),
+    )
 
-        self.conv1 = nn.Conv2d(1, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
-        self.dropout1 = nn.Dropout(0.25)
-        self.dropout2 = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, 10)
+def reduce2d(_in, _out):
+    return nn.Sequential(
+        nn.Conv2d(_in, _out, kernel_size=3, stride=1),
+        nn.ReLU(inplace=True),
+    )
+
+def deconv2d(_in, _out):
+    return nn.Sequential(
+        nn.ConvTranspose2d(in_channels=_in, out_channels=_out * 2, kernel_size=4, stride=2,
+                           padding=1, bias=False),
+        nn.ReLU(inplace=True),
+        nn.ConvTranspose2d(in_channels=_out * 2, out_channels=_out, kernel_size=4, stride=2,
+                           padding=1, bias=False),
+        nn.Conv2d(_out, _out, kernel_size=3, stride=1, padding=1),
+        nn.ReLU(inplace=True),
+    )
+
+
+class Encoder(nn.Module):
+    def __init__(self):
+        super(Encoder, self).__init__()
+
+        self.conv_lst = nn.ModuleList([
+            conv2d(3),
+            conv2d(32),
+            conv2d(64),
+            conv2d(128),
+            conv2d(256),
+            conv2d(512),
+            conv2d(1024),
+        ])
+
+        self.reduce_lst = nn.ModuleList([
+            reduce2d(3, 32),
+            reduce2d(32, 64),
+            reduce2d(64, 128),
+            reduce2d(128, 256),
+            reduce2d(256, 512),
+            reduce2d(512, 1024),
+            reduce2d(1024, 1536),
+        ])
+
+        self.mu = nn.Conv2d(1536, 1536, kernel_size=3, stride=1, padding=1)
+        self.log_var = nn.Conv2d(1536, 1536, kernel_size=3, stride=1, padding=1)
 
         self.apply(weights_init)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
+        for conv, reduce in zip(self.module_lst, self.reduce_lst):
+            _x = conv(x)
+            x = x + _x
+            x = reduce(x)
 
-        x = self.conv2(x)
-        x = F.relu(x)
+        mu = self.mu(x)
+        log_var = self.log_var(x)
 
-        x = F.max_pool2d(x, 2)
-        x = self.dropout1(x)
-        x = torch.flatten(x, 1)
+        return self.sampling(mu, log_var), mu, log_var
 
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.dropout2(x)
-
-        x = self.fc2(x)
-
-        return x
+    def sampling(self, mu, log_var):
+        std = torch.exp(0.5 * log_var)
+        eps = torch.randn_like(std)
+        return eps.mul(std).add_(mu)
 
 
-class SampleModel(nn.Module):
+class Decoder(nn.Module):
     def __init__(self):
-        super().__init__()
+        super(Decoder, self).__init__()
 
-        self.network = SampleModule()
+        self.deconv_lst = nn.ModuleList([
+            deconv2d(1536, 512),
+            deconv2d(512, 128),
+            deconv2d(128, 32),
+        ])
 
+        self.deconv = nn.ConvTranspose2d(in_channels=32, out_channels=3, kernel_size=4, stride=2,
+                                         padding=1, bias=False)
+
+        self.mu = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
+        self.log_var = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
 
         self.apply(weights_init)
 
     def forward(self, x):
-        _x = self.network(x)
-        output = F.log_softmax(_x, dim=1)
+        for deconv in self.deconv_lst:
+            x = deconv(x)
+        x = self.deconv(x)
 
-        return output
+        mu = self.mu(x)
+        log_var = self.log_var(x)
+
+        return self.sampling(mu, log_var)
+
+    def sampling(self, mu, log_var):
+        std = torch.exp(0.5 * log_var)
+        eps = torch.randn_like(std)
+        return eps.mul(std).add_(mu)
+
+
+class Model(nn.Module):
+    def __init__(self):
+        super(Model, self).__init__()
+
+        self.encoder = Encoder()
+        self.decoder = Decoder()
+
+        self.apply(weights_init)
+
+    def forward(self, x):
+        z, mu, log_var = self.encoder(x)
+        out = self.decoder(z)
+
+        return out, mu, log_var
