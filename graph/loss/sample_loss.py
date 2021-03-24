@@ -7,7 +7,7 @@ class SampleLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.loss = nn.L1Loss()
+        self.loss = nn.L1Loss(reduction='sum')
 
     def forward(self, recon, x, mu, log_var):
         BCE = self.loss(recon, x)
