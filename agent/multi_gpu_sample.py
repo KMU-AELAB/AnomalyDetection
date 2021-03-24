@@ -140,9 +140,9 @@ class Sample(object):
 
             X = X.cuda(async=self.config.async_loading)
 
-            out = self.model(X)
+            out, mu, log_var = self.model(X)
 
-            loss = self.loss(out, X)
+            loss = self.loss(out, X, mu, log_var)
 
             self.opt.zero_grad()
             loss.backward()
