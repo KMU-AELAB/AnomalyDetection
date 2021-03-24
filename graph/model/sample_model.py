@@ -93,7 +93,6 @@ class Decoder(nn.Module):
     def forward(self, x):
         for deconv in self.deconv_lst:
             x = deconv(x)
-        x = self.deconv(x)
 
         mu = self.mu(x)
         log_var = self.log_var(x)
