@@ -61,7 +61,7 @@ class Encoder(nn.Module):
         self.apply(weights_init)
 
     def forward(self, x):
-        for conv, reduce in zip(self.module_lst, self.reduce_lst):
+        for conv, reduce in zip(self.conv_lst, self.reduce_lst):
             _x = conv(x)
             x = x + _x
             x = reduce(x)
