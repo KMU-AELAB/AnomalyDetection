@@ -42,7 +42,6 @@ class Encoder(nn.Module):
             conv2d(128),
             conv2d(256),
             conv2d(512),
-            conv2d(1024),
         ])
 
         self.reduce_lst = nn.ModuleList([
@@ -52,11 +51,10 @@ class Encoder(nn.Module):
             reduce2d(128, 256),
             reduce2d(256, 512),
             reduce2d(512, 1024),
-            reduce2d(1024, 1536),
         ])
 
-        self.mu = nn.Conv2d(1536, 1536, kernel_size=3, stride=1, padding=1)
-        self.log_var = nn.Conv2d(1536, 1536, kernel_size=3, stride=1, padding=1)
+        self.mu = nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1)
+        self.log_var = nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1)
 
         self.apply(weights_init)
 
@@ -84,11 +82,8 @@ class Decoder(nn.Module):
         self.deconv_lst = nn.ModuleList([
             deconv2d(1536, 512),
             deconv2d(512, 128),
-            deconv2d(128, 32),
+            deconv2d(128, 3),
         ])
-
-        self.deconv = nn.ConvTranspose2d(in_channels=32, out_channels=3, kernel_size=4, stride=2,
-                                         padding=1, bias=False)
 
         self.mu = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
         self.log_var = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
