@@ -1,6 +1,7 @@
 import os
 import shutil
 import random
+import numpy as np
 from tqdm import tqdm
 
 import torch
@@ -31,7 +32,7 @@ class Sample(object):
         self.torchvision_transform = transforms.Compose([
             transforms.Resize((1024, 512)),
             transforms.RandomRotation((-1.2, 1.2), fill='white'),
-            transforms.ColorJitter(brightness=(-40, 40)),
+            transforms.ColorJitter(brightness=(1., 2.)),
             transforms.ToTensor(),
         ])
 
@@ -88,7 +89,8 @@ class Sample(object):
         print('Number of model parameters: {}'.format(count_model_prameters(self.model)))
 
     def collate_function(self, samples):
-        return samples
+        data = torch.cat([sample['X'].view([1, 3, 1024, 512]) for sample in samples], axis=0)
+        return data
 
     def load_checkpoint(self, file_name):
         filename = os.path.join(self.config.root_path, self.config.checkpoint_dir, file_name)
