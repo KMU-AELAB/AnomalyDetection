@@ -80,9 +80,9 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
 
         self.deconv_lst = nn.ModuleList([
-            deconv2d(1024, 512),
-            deconv2d(512, 128),
-            deconv2d(128, 3),
+            deconv2d(1024, 256),
+            deconv2d(256, 64),
+            deconv2d(64, 3),
         ])
 
         self.mu = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
