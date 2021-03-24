@@ -124,13 +124,13 @@ class Sample(object):
             print("You have entered CTRL+C.. Wait to finalize")
 
     def record_image(self, output, origin):
-        self.summary_writer.add_image('/origin 1', origin[0], self.epoch)
-        self.summary_writer.add_image('/origin 2', origin[1], self.epoch)
-        self.summary_writer.add_image('/origin 1', origin[2], self.epoch)
+        self.summary_writer.add_image('origin/img 1', origin[0], self.epoch)
+        self.summary_writer.add_image('origin/img 2', origin[1], self.epoch)
+        self.summary_writer.add_image('origin/img 3', origin[2], self.epoch)
 
-        self.summary_writer.add_image('/model_output 2', output[0], self.epoch)
-        self.summary_writer.add_image('/model_output 1', output[1], self.epoch)
-        self.summary_writer.add_image('/model_output 2', output[2], self.epoch)
+        self.summary_writer.add_image('model_output/img 1', output[0], self.epoch)
+        self.summary_writer.add_image('model_output/img 2', output[1], self.epoch)
+        self.summary_writer.add_image('model_output/img 3', output[2], self.epoch)
 
 
     def train(self):
@@ -160,9 +160,11 @@ class Sample(object):
             self.opt.step()
             avg_loss.update(loss)
 
+            if curr_it == 14:
+                self.record_image(out, X)
+
         tqdm_batch.close()
 
-        self.record_image(out, X)
         self.summary_writer.add_scalar('train/loss', avg_loss.val, self.epoch)
 
         self.scheduler.step(avg_loss.val)
