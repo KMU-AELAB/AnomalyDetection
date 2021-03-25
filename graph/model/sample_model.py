@@ -88,16 +88,15 @@ class Decoder(nn.Module):
         self.mu = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
         self.log_var = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
 
+        self.sigmoid = nn.Sigmoid()
+
         self.apply(weights_init)
 
     def forward(self, x):
         for deconv in self.deconv_lst:
             x = deconv(x)
 
-        mu = self.mu(x)
-        log_var = self.log_var(x)
-
-        return self.sampling(mu, log_var)
+        return self.sigmoid(x)
 
     def sampling(self, mu, log_var):
         std = torch.exp(0.5 * log_var)
