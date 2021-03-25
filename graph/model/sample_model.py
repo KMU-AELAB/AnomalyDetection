@@ -50,11 +50,11 @@ class Encoder(nn.Module):
             reduce2d(64, 128),
             reduce2d(128, 256),
             reduce2d(256, 512),
-            reduce2d(512, 1024),    # 1024, 16 * 8
+            reduce2d(512, 1024),
         ])
 
-        self.mu = nn.Linear(1024*16*8, 1024*8)
-        self.log_var = nn.Linear(1024*16*8, 1024*8)
+        self.mu = nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1)
+        self.log_var = nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1)
 
         self.apply(weights_init)
 
@@ -64,7 +64,6 @@ class Encoder(nn.Module):
             x = x + _x
             x = reduce(x)
 
-        x = torch.flatten(x)
         mu = self.mu(x)
         log_var = self.log_var(x)
 
@@ -86,8 +85,6 @@ class Decoder(nn.Module):
             deconv2d(64, 3),
         ])
 
-        self.fc = nn.Linear(1024 * 8, 1024 * 16 * 8)
-
         self.mu = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
         self.log_var = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
 
@@ -96,9 +93,6 @@ class Decoder(nn.Module):
         self.apply(weights_init)
 
     def forward(self, x):
-        x = self.fc(x)
-
-        x = x.view([-1, 16, 8])
         for deconv in self.deconv_lst:
             x = deconv(x)
 

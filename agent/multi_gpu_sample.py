@@ -33,6 +33,7 @@ class Sample(object):
             transforms.Resize((1024, 512)),
             transforms.RandomRotation((-1.3, 1.3), fill='white'),
             transforms.ColorJitter(brightness=(0.8, 1.2)),
+            transforms.Grayscale(),
             transforms.ToTensor(),
         ])
 
