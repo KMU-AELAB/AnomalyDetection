@@ -31,8 +31,8 @@ class Sample(object):
 
         self.torchvision_transform = transforms.Compose([
             transforms.Resize((1024, 512)),
-            transforms.RandomRotation((-1.2, 1.2), fill='white'),
-            transforms.ColorJitter(brightness=(0.5, 1.2)),
+            transforms.RandomRotation((-1.3, 1.3), fill='white'),
+            transforms.ColorJitter(brightness=(0.8, 1.2)),
             transforms.ToTensor(),
         ])
 
@@ -159,7 +159,7 @@ class Sample(object):
             self.opt.step()
             avg_loss.update(loss)
 
-            if curr_it == 14:
+            if curr_it == 4:
                 self.record_image(out, X)
 
         tqdm_batch.close()
