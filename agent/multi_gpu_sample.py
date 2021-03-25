@@ -92,7 +92,7 @@ class Sample(object):
         print('Number of model parameters: {}'.format(count_model_prameters(self.model)))
 
     def collate_function(self, samples):
-        data = torch.cat([sample['X'].view([1, 3, 1024, 512]) for sample in samples], axis=0)
+        data = torch.cat([sample['X'].view([1, 1, 1024, 512]) for sample in samples], axis=0)
         return data
 
     def load_checkpoint(self, file_name):
@@ -150,14 +150,14 @@ class Sample(object):
         avg_loss = AverageMeter()
         for curr_it, X in enumerate(tqdm_batch):
             self.model.train()
+            self.opt.zero_grad()
 
             X = X.cuda(async=self.config.async_loading)
-
+            
             out, mu, log_var = self.model(X)
 
             loss = self.loss(out, X, mu, log_var)
-
-            self.opt.zero_grad()
+            
             loss.backward()
             self.opt.step()
             avg_loss.update(loss)
