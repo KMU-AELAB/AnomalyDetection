@@ -7,26 +7,26 @@ from graph.weights_initializer import weights_init
 
 def conv2d(_in):
     return nn.Sequential(
-        nn.Conv2d(_in, _in, kernel_size=3, stride=1, padding=1),
+        nn.Conv2d(_in, _in, kernel_size=3, stride=1, padding=1, bias=False),
         nn.ReLU(inplace=True),
-        nn.Conv2d(_in, _in, kernel_size=3, stride=1, padding=1),
+        nn.Conv2d(_in, _in, kernel_size=3, stride=1, padding=1, bias=False),
         nn.ReLU(inplace=True),
     )
 
 def reduce2d(_in, _out):
     return nn.Sequential(
-        nn.Conv2d(_in, _out, kernel_size=3, stride=2, padding=1),
+        nn.Conv2d(_in, _out, kernel_size=3, stride=2, padding=1, bias=False),
         nn.ReLU(inplace=True),
     )
 
 def deconv2d(_in, _out):
     return nn.Sequential(
         nn.ConvTranspose2d(in_channels=_in, out_channels=_out * 2, kernel_size=4, stride=2,
-                           padding=1, bias=True),
+                           padding=1, bias=False),
         nn.ReLU(inplace=True),
         nn.ConvTranspose2d(in_channels=_out * 2, out_channels=_out, kernel_size=4, stride=2,
-                           padding=1, bias=True),
-        nn.Conv2d(_out, _out, kernel_size=3, stride=1, padding=1),
+                           padding=1, bias=False),
+        nn.Conv2d(_out, _out, kernel_size=3, stride=1, padding=1, bias=False),
         nn.ReLU(inplace=True),
     )
 
@@ -53,8 +53,8 @@ class Encoder(nn.Module):
             reduce2d(512, 1024),
         ])
 
-        self.mu = nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1)
-        self.log_var = nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1)
+        self.mu = nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1, bias=False)
+        self.log_var = nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.apply(weights_init)
 
@@ -85,8 +85,8 @@ class Decoder(nn.Module):
             deconv2d(64, 3),
         ])
 
-        self.mu = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
-        self.log_var = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
+        # self.mu = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1, bias=False)
+        # self.log_var = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.sigmoid = nn.Sigmoid()
 

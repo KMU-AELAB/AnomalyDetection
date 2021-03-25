@@ -28,9 +28,11 @@ class Sample(object):
         self.config = config
         self.flag_gan = False
         self.train_count = 0
+        self.width = 1024
+        self.height = 512
 
         self.torchvision_transform = transforms.Compose([
-            transforms.Resize((1024, 512)),
+            transforms.Resize((self.width, self.height)),
             transforms.RandomRotation((-1.3, 1.3), fill='white'),
             transforms.ColorJitter(brightness=(0.8, 1.2)),
             transforms.Grayscale(),
