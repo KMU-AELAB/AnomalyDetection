@@ -11,10 +11,10 @@ def weights_init(m):
             m.weight.data.normal_(-1.0, 1.0)
 
     elif classname.find('BatchNorm') != -1:
-        torch.nn.init.xavier_uniform(m.weight)
+        m.weight.data.normal_(0.0, 1.0)
 
         if m.bias is not None:
-            m.weight.data.normal_(-1.0, 1.0)
+            m.weight.data.normal_(0.0, 1.0)
 
     elif classname.find('Linear') != -1:
         torch.nn.init.xavier_uniform(m.weight)

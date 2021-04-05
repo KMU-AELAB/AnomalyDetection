@@ -62,7 +62,7 @@ class Sample(object):
         self.opt = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
         # define optimize scheduler
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt, mode='min', factor=0.8, cooldown=10)
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt, mode='min', factor=0.8, cooldown=15)
 
         # initialize train counter
         self.epoch = 0

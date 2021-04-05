@@ -19,6 +19,7 @@ from utils.metrics import AverageMeter
 from utils.train_utils import set_logger, count_model_prameters
 
 cudnn.benchmark = True
+torch.backends.cudnn.enabled = False
 
 
 class Sample(object):
@@ -48,7 +49,7 @@ class Sample(object):
                                      pin_memory=self.config.pin_memory, collate_fn=self.collate_function)
 
         # define models ( generator and discriminator)
-        self.model = Model().cuda()
+        self.model = Model(1024, 512, 1).cuda()
 
         # define loss
         self.loss = Loss().cuda()
@@ -151,9 +152,9 @@ class Sample(object):
 
             X = X.cuda(async=self.config.async_loading)
 
-            out, mu, log_var = self.model(X)
+            out, att = self.model(X)
 
-            loss = self.loss(out, X, mu, log_var)
+            loss = self.loss(out, X, att)
 
             loss.backward()
             self.opt.step()

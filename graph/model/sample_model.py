@@ -59,8 +59,8 @@ class Encoder(nn.Module):
         self.conv = nn.Conv2d(1024, 1024, kernel_size=[16, 8], stride=1, bias=False)
         self.relu = nn.ReLU(inplace=True)
         
-        self.mu = nn.Conv2d(1024, 1024, kernel_size=1, stride=1, bias=False)
-        self.log_var = nn.Conv2d(1024, 1024, kernel_size=1, stride=1, bias=False)
+        self.mu = nn.Conv2d(1024, 1536, kernel_size=1, stride=1, bias=False)
+        self.log_var = nn.Conv2d(1024, 1536, kernel_size=1, stride=1, bias=False)
 
         self.apply(weights_init)
 
@@ -92,14 +92,14 @@ class Decoder(nn.Module):
             deconv2d(64, 1),
         ])
 
-        self.deconv = nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=[16,8], stride=[16, 8],
+        self.deconv = nn.ConvTranspose2d(in_channels=1536, out_channels=1024, kernel_size=[16,8], stride=[16, 8],
                                          bias=False)
 
-        # self.mu = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1, bias=False)
-        # self.log_var = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1, bias=False)
+        self.mu = nn.Conv2d(1, 1, kernel_size=3, stride=1, padding=1, bias=False)
+        self.log_var = nn.Conv2d(1, 1, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.relu = nn.ReLU(inplace=True)
-        self.sigmoid = nn.Sigmoid()
+#         self.sigmoid = nn.Sigmoid()
 
         self.apply(weights_init)
 
@@ -107,8 +107,11 @@ class Decoder(nn.Module):
         x = self.relu(self.deconv(x))
         for deconv in self.deconv_lst:
             x = deconv(x)
+            
+        mu = self.mu(x)
+        log_var = self.log_var(x)
 
-        return self.sigmoid(x)
+        return self.sampling(mu, log_var) #self.sigmoid(x)
 
     def sampling(self, mu, log_var):
         std = torch.exp(0.5 * log_var)
