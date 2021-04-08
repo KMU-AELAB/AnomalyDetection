@@ -24,3 +24,12 @@ class MemLoss(nn.Module):
         recon_error = self.loss(recon, x)
         weight_error = torch.sum(att.mul(torch.log(att + 1e-5)))
         return recon_error - (weight_error * 0.0002)
+
+
+class lMemLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.loss = nn.MSELoss()
+
+    def forward(self, recon, x):
+        return self.loss(recon, x)
