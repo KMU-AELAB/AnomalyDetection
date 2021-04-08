@@ -58,7 +58,7 @@ class MemoryUnit(nn.Module):
 
     def forward(self, query, s):
         score = F.linear(query, self.weight)  # Fea x Mem^T, (TxC) x (CxM) = TxM
-        score = score.view(-1, self.weight[0])
+        score = score.view(-1, self.weight.size(0))
         score = F.softmax(score, dim=1)  # TxM => score
 
         query = query.contiguous()
@@ -67,7 +67,7 @@ class MemoryUnit(nn.Module):
         mem_trans = self.weight.permute(1, 0)  # Mem^T, MxC
         mem = F.linear(score, mem_trans)  # AttWeight x Mem^T^T = AW x Mem, (TxM) x (MxC) = TxC
         output = torch.cat((query, mem), dim=1)
-
+        
         return output, self.gather_loss(query, score), self.spread_loss(query, score)
 
     def gather_loss(self, query, score):
@@ -101,8 +101,8 @@ class MemModule(nn.Module):
         x = x.permute(0, 2, 3, 1)
 
         y, g_loss, s_loss = self.memory(x, s)
-
-        y = y.view(s[0], s[2], s[3], s[1])
+        
+        y = y.view(s[0], s[2], s[3], s[1] * 2)
         y = y.permute(0, 3, 1, 2)
 
         return y, g_loss, s_loss
@@ -148,9 +148,9 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
 
         self.deconv_lst = nn.ModuleList([
-            deconv2d(feature_size, 256),
-            deconv2d(256, 64),
-            deconv2d(64, channel),
+            deconv2d(feature_size * 2, 768),
+            deconv2d(768, 128),
+            deconv2d(128, channel),
         ])
 
         self.relu = nn.ReLU(inplace=True)
