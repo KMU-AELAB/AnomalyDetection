@@ -58,13 +58,14 @@ class MemoryUnit(nn.Module):
 
     def forward(self, query, s):
         score = F.linear(query, self.weight)  # Fea x Mem^T, (TxC) x (CxM) = TxM
+        score = score.view(-1, self.weight[0])
         score = F.softmax(score, dim=1)  # TxM => score
 
         query = query.contiguous()
-        query = query.view(-1, s[1])
+        query = query.view(-1, query.size(3))
 
         mem_trans = self.weight.permute(1, 0)  # Mem^T, MxC
-        mem = F.linear(query, mem_trans)  # AttWeight x Mem^T^T = AW x Mem, (TxM) x (MxC) = TxC
+        mem = F.linear(score, mem_trans)  # AttWeight x Mem^T^T = AW x Mem, (TxM) x (MxC) = TxC
         output = torch.cat((query, mem), dim=1)
 
         return output, self.gather_loss(query, score), self.spread_loss(query, score)
